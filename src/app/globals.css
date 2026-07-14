@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* daisyUI 5 — CSS-first config. Garden theme (fresh/green) as requested,
+   plus a dark companion so the app respects prefers-color-scheme. */
+@plugin "daisyui" {
+  themes:
+    garden --default,
+    forest --prefersdark;
+}
+
+/* Forkcast tokens layered on top of the daisyUI garden palette.
+   Keep semantic colours flowing through daisyUI vars so both themes work. */
+:root {
+  --fc-radius: 1rem;
+  /* safe-area aware bottom padding for the mobile tab bar */
+  --fc-tabbar-h: 4rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  /* base-200 gives the warm/earthy canvas the prototype leaned on */
+  background-color: var(--color-base-200);
+  color: var(--color-base-content);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Larger touch targets on the primary shopping/checklist surfaces.
+   Mobile-first: the app is used one-handed at the shops. */
+.touch-row {
+  min-height: 3rem;
+}
+
+/* Hide scrollbars on horizontal scroll strips (planner day rail) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Respect the iOS/Android home indicator for the fixed bottom nav */
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
