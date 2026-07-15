@@ -287,18 +287,31 @@ export async function setPantryStatus(
   revalidatePath("/pantry");
 }
 
+export async function setPantryStaple(
+  id: string,
+  isStaple: boolean,
+): Promise<void> {
+  const { supabase } = await requireUser();
+  await supabase
+    .from("pantry_items")
+    .update({ is_staple: isStaple })
+    .eq("id", id);
+  revalidatePath("/pantry");
+}
+
 export async function addPantryItem(formData: FormData): Promise<void> {
   const { supabase, userId } = await requireUser();
   const name = (formData.get("name") as string)?.trim();
   const category = (formData.get("category") as string) || "Other";
-  const isFood = formData.get("is_food") !== "off";
+  const isFood = formData.get("is_food") != null;
+  const isStaple = formData.get("is_staple") != null;
   if (!name) return;
   await supabase.from("pantry_items").insert({
     owner_id: userId,
     name,
     category,
-    status: "out",
-    is_staple: false,
+    status: isStaple ? "in-stock" : "out",
+    is_staple: isStaple,
     is_food: isFood,
   });
   revalidatePath("/pantry");

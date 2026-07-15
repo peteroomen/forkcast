@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Utensils } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -42,7 +43,9 @@ export default function LoginPage() {
       <div className="card w-full max-w-sm bg-base-100 shadow-xl">
         <div className="card-body">
           <div className="mb-2 flex items-center gap-2">
-            <span className="text-3xl">🍴</span>
+            <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-content">
+              <Utensils className="size-5" />
+            </span>
             <h1 className="text-2xl font-bold tracking-tight">Forkcast</h1>
           </div>
           <p className="mb-4 text-sm text-base-content/60">

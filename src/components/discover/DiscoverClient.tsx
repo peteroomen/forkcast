@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { PartyPopper, Star, X } from "lucide-react";
 import { toggleFavourite } from "@/lib/actions";
 import { RecipeBadges } from "@/components/library/RecipeBadges";
 import type { Recipe } from "@/lib/types";
@@ -48,7 +49,7 @@ export function DiscoverClient({
   if (done) {
     return (
       <div className="space-y-4 py-10 text-center">
-        <div className="text-5xl">🎉</div>
+        <PartyPopper className="mx-auto size-12 text-primary" />
         <h1 className="text-xl font-bold">That&apos;s the deck</h1>
         <p className="text-sm text-base-content/60">
           You liked {liked.length} meal{liked.length === 1 ? "" : "s"} this
@@ -127,7 +128,7 @@ export function DiscoverClient({
             className="absolute right-4 top-4 rotate-12 rounded border-2 border-success px-2 font-bold text-success"
             style={{ opacity: drag > 40 ? Math.min(1, drag / 120) : 0 }}
           >
-            ★ LIKE
+            LIKE
           </span>
         </div>
       </div>
@@ -138,14 +139,14 @@ export function DiscoverClient({
           onClick={next}
           aria-label="Skip"
         >
-          ✕
+          <X className="size-6" />
         </button>
         <button
           className="btn btn-circle btn-lg btn-primary"
           onClick={() => like(current)}
           aria-label="Like"
         >
-          ★
+          <Star className="size-6" />
         </button>
       </div>
     </div>

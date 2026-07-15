@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Pin, PinOff, Plus, X } from "lucide-react";
 import {
   addLowStockToShopping,
   addPantryItem,
   deletePantryItem,
+  setPantryStaple,
   setPantryStatus,
 } from "@/lib/actions";
 import { CATEGORIES } from "@/lib/constants";
@@ -33,14 +35,15 @@ export function PantryClient({
   const lowOrOut = items.filter(
     (i) => i.status !== "in-stock" && !i.is_staple,
   ).length;
+  const stapleCount = items.filter((i) => i.is_staple).length;
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Pantry</h1>
         <p className="text-sm text-base-content/60">
-          Mark what&apos;s low or out. Staples (lemon, herbs) are always in
-          stock and skip the list.
+          Mark what&apos;s low or out. Pin staples (always in stock) to skip them
+          on the shopping list — {stapleCount} pinned.
         </p>
       </div>
 
@@ -67,15 +70,14 @@ export function PantryClient({
             <h2 className="mb-1 text-sm font-semibold">{cat}</h2>
             <ul className="space-y-2">
               {rows.map((item) => (
-                <li
-                  key={item.id}
-                  className="card bg-base-100 p-3 shadow-sm"
-                >
+                <li key={item.id} className="card bg-base-100 p-3 shadow-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-2 font-medium">
                       {item.name}
                       {item.is_staple && (
-                        <span className="badge badge-ghost badge-xs">staple</span>
+                        <span className="badge badge-ghost badge-xs gap-1">
+                          <Pin className="size-3" /> staple
+                        </span>
                       )}
                       {!item.is_food && (
                         <span className="badge badge-outline badge-xs">
@@ -83,20 +85,41 @@ export function PantryClient({
                         </span>
                       )}
                     </span>
-                    {!item.is_staple && (
+                    <div className="flex items-center gap-1">
                       <button
-                        className="btn btn-ghost btn-xs px-2"
+                        className="btn btn-ghost btn-xs btn-square"
+                        title={
+                          item.is_staple ? "Unpin staple" : "Pin as staple"
+                        }
+                        aria-label={
+                          item.is_staple ? "Unpin staple" : "Pin as staple"
+                        }
+                        onClick={() =>
+                          startTransition(async () => {
+                            await setPantryStaple(item.id, !item.is_staple);
+                            router.refresh();
+                          })
+                        }
+                      >
+                        {item.is_staple ? (
+                          <PinOff className="size-4" />
+                        ) : (
+                          <Pin className="size-4" />
+                        )}
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-xs btn-square"
+                        aria-label="Remove"
                         onClick={() =>
                           startTransition(async () => {
                             await deletePantryItem(item.id);
                             router.refresh();
                           })
                         }
-                        aria-label="Remove"
                       >
-                        ✕
+                        <X className="size-4" />
                       </button>
-                    )}
+                    </div>
                   </div>
                   <div className="mt-2 join">
                     {STATUS.map((s) => (
@@ -154,15 +177,25 @@ export function PantryClient({
               ))}
             </select>
           </div>
-          <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="is_food"
-              defaultChecked
-              className="checkbox checkbox-sm"
-            />
-            Food item
-          </label>
+          <div className="mt-2 flex flex-wrap gap-4">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_food"
+                defaultChecked
+                className="checkbox checkbox-sm"
+              />
+              Food item
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_staple"
+                className="checkbox checkbox-sm"
+              />
+              Staple (always in stock)
+            </label>
+          </div>
           <div className="mt-2 flex justify-end gap-2">
             <button
               type="button"
@@ -181,7 +214,7 @@ export function PantryClient({
           className="btn btn-outline btn-block"
           onClick={() => setShowAdd(true)}
         >
-          + Add pantry item
+          <Plus className="size-4" /> Add pantry item
         </button>
       )}
     </div>

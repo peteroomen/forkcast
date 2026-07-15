@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Croissant, Sparkles, Timer, TriangleAlert, X } from "lucide-react";
 import {
   assignMeal,
   createPlan,
@@ -104,7 +105,7 @@ export function PlannerClient({
           router.refresh();
         });
       }
-      flash(`💡 ${data.meal} — ${data.reason}`);
+      flash(`${data.meal} — ${data.reason}`);
     } catch {
       flash("Suggestion failed. Try again.");
     } finally {
@@ -137,7 +138,8 @@ export function PlannerClient({
       {/* Conflict banner */}
       {conflicts.length > 0 && (
         <div className="alert alert-error text-sm">
-          ⚠️ Same-week clash:{" "}
+          <TriangleAlert className="size-4" />
+          Same-week clash:{" "}
           {conflicts.map(([a, b]) => `${a} + ${b}`).join(", ")} — house rule says
           not in the same week.
         </div>
@@ -214,20 +216,21 @@ export function PlannerClient({
                           {recipe ? recipe.name : "Tap to add a meal…"}
                         </button>
                         <button
-                          className="btn btn-ghost btn-sm"
+                          className="btn btn-ghost btn-sm btn-square"
                           disabled={suggestingId === day.id}
                           onClick={() => suggest(day)}
                           title="AI suggestion"
+                          aria-label="AI suggestion"
                         >
                           {suggestingId === day.id ? (
                             <span className="loading loading-spinner loading-xs" />
                           ) : (
-                            "✨"
+                            <Sparkles className="size-4" />
                           )}
                         </button>
                         {recipe && (
                           <button
-                            className="btn btn-ghost btn-sm px-2"
+                            className="btn btn-ghost btn-sm btn-square"
                             onClick={() =>
                               startTransition(async () => {
                                 await assignMeal(day.id, null);
@@ -236,26 +239,28 @@ export function PlannerClient({
                             }
                             aria-label="Clear"
                           >
-                            ✕
+                            <X className="size-4" />
                           </button>
                         )}
                       </div>
                       {celery.length > 0 && (
-                        <p className="text-xs text-error">
-                          ⚠️ {recipe?.name} has {celery.join(", ")} — swap it out.
+                        <p className="flex items-center gap-1 text-xs text-error">
+                          <TriangleAlert className="size-3.5" />
+                          {recipe?.name} has {celery.join(", ")} — swap it out.
                         </p>
                       )}
                       {side && (
-                        <p className="text-xs text-base-content/50">
-                          🥖 Pair with {side}.
+                        <p className="flex items-center gap-1 text-xs text-base-content/50">
+                          <Croissant className="size-3.5" /> Pair with {side}.
                         </p>
                       )}
                       {isJamie &&
                         recipe &&
                         (recipe.time_minutes == null ||
                           recipe.time_minutes > 30) && (
-                          <p className="text-xs text-warning">
-                            ⏱️ Jamie&apos;s night — this looks over 30 min.
+                          <p className="flex items-center gap-1 text-xs text-warning">
+                            <Timer className="size-3.5" />
+                            Jamie&apos;s night — this looks over 30 min.
                           </p>
                         )}
                     </>
@@ -277,7 +282,7 @@ export function PlannerClient({
           onClick={() =>
             startTransition(async () => {
               await generateShoppingList(plan.id);
-              flash("🛒 Shopping list generated.");
+              flash("Shopping list generated.");
               router.push("/shopping");
             })
           }
@@ -292,7 +297,7 @@ export function PlannerClient({
               startTransition(async () => {
                 await generateShoppingList(plan.id);
                 await publishPlan(plan.id);
-                flash("✅ Fortnight published.");
+                flash("Fortnight published.");
                 router.refresh();
               })
             }

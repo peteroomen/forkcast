@@ -1,3 +1,4 @@
+import { ChefHat, Clock, Star } from "lucide-react";
 import type { Recipe } from "@/lib/types";
 
 const TAG_LABEL: Record<string, string> = {
@@ -9,18 +10,13 @@ const TAG_LABEL: Record<string, string> = {
   new: "New",
 };
 
-const COOK_EMOJI: Record<string, string> = {
-  peter: "👨‍🍳",
-  megan: "👩‍🍳",
-  jamie: "🧑‍🍳",
-  anyone: "🍽️",
-};
-
 export function RecipeBadges({ recipe }: { recipe: Recipe }) {
   return (
     <div className="flex flex-wrap items-center gap-1">
       {recipe.is_favourite && (
-        <span className="badge badge-sm badge-warning gap-1">★</span>
+        <span className="badge badge-sm badge-warning gap-1">
+          <Star className="size-3" />
+        </span>
       )}
       {recipe.needs_recipe && (
         <span className="badge badge-sm badge-error badge-outline">
@@ -28,11 +24,11 @@ export function RecipeBadges({ recipe }: { recipe: Recipe }) {
         </span>
       )}
       <span className="badge badge-sm badge-ghost gap-1" title={recipe.cooked_by}>
-        {COOK_EMOJI[recipe.cooked_by]} {recipe.cooked_by}
+        <ChefHat className="size-3" /> {recipe.cooked_by}
       </span>
       {recipe.time_minutes != null && (
-        <span className="badge badge-sm badge-ghost">
-          {recipe.time_minutes} min
+        <span className="badge badge-sm badge-ghost gap-1">
+          <Clock className="size-3" /> {recipe.time_minutes} min
         </span>
       )}
       {recipe.tags.map((t) => (

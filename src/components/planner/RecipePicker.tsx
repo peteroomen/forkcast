@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Star, X } from "lucide-react";
 import { JAMIE_MAX_MINUTES } from "@/lib/constants";
 import type { Recipe } from "@/lib/types";
 
@@ -38,8 +39,12 @@ export function RecipePicker({ recipes, quickOnly, onPick, onClose }: Props) {
               </span>
             )}
           </h3>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>
-            ✕
+          <button
+            className="btn btn-ghost btn-sm btn-square"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X className="size-4" />
           </button>
         </div>
 
@@ -79,7 +84,9 @@ export function RecipePicker({ recipes, quickOnly, onPick, onClose }: Props) {
                   )}
                 </span>
                 <span className="flex shrink-0 items-center gap-1">
-                  {r.is_favourite && <span className="text-warning">★</span>}
+                  {r.is_favourite && (
+                    <Star className="size-3.5 fill-warning text-warning" />
+                  )}
                   {r.time_minutes != null && (
                     <span className="text-xs text-base-content/50">
                       {r.time_minutes}m

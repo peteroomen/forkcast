@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/AppShell";
 import { DiscoverClient } from "@/components/discover/DiscoverClient";
 import { getRecentMealNames, getRecipes } from "@/lib/data";
 
@@ -22,9 +21,5 @@ export default async function DiscoverPage() {
     .sort((a, b) => b.staleBonus - a.staleBonus)
     .map((x) => x.recipe);
 
-  return (
-    <AppShell>
-      <DiscoverClient deck={deck} recentNames={recent} />
-    </AppShell>
-  );
+  return <DiscoverClient deck={deck} recentNames={recent} />;
 }

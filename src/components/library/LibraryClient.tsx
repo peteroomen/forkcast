@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Plus, Star, TriangleAlert } from "lucide-react";
 import { deleteRecipe, toggleFavourite } from "@/lib/actions";
 import { detectBannedIngredients, CELERY_SUBSTITUTES } from "@/lib/constants";
 import type { Recipe } from "@/lib/types";
@@ -40,7 +41,7 @@ export function LibraryClient({ recipes }: { recipes: Recipe[] }) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Recipe library</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setEditing("new")}>
-          + Add
+          <Plus className="size-4" /> Add
         </button>
       </div>
 
@@ -97,20 +98,27 @@ export function LibraryClient({ recipes }: { recipes: Recipe[] }) {
                   </button>
                   <button
                     aria-label="Toggle favourite"
-                    className="text-lg"
+                    className="btn btn-ghost btn-xs btn-square"
                     onClick={() =>
                       startTransition(() =>
                         toggleFavourite(r.id, !r.is_favourite),
                       )
                     }
                   >
-                    {r.is_favourite ? "★" : "☆"}
+                    <Star
+                      className={`size-4 ${
+                        r.is_favourite
+                          ? "fill-warning text-warning"
+                          : "text-base-content/40"
+                      }`}
+                    />
                   </button>
                 </div>
                 <RecipeBadges recipe={r} />
                 {celery.length > 0 && (
                   <div className="alert alert-error px-3 py-2 text-xs">
-                    ⚠️ Contains {celery.join(", ")} — swap for{" "}
+                    <TriangleAlert className="size-4" />
+                    Contains {celery.join(", ")} — swap for{" "}
                     {CELERY_SUBSTITUTES.join(" / ")} (house rule: no celery).
                   </div>
                 )}

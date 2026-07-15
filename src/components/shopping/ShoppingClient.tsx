@@ -3,22 +3,34 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Apple,
+  Beef,
+  Egg,
+  Plus,
+  RefreshCw,
+  Snowflake,
+  ShoppingBasket,
+  Wheat,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import {
   addShoppingItem,
   deleteShoppingItem,
   generateShoppingList,
   toggleShoppingItem,
 } from "@/lib/actions";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, type Category } from "@/lib/constants";
 import { CATEGORY_ORDER, groupByCategory } from "@/lib/shopping";
 import type { ShoppingItem } from "@/lib/types";
 
-const CATEGORY_ICON: Record<string, string> = {
-  Produce: "🥬",
-  "Meat & Fish": "🥩",
-  "Dairy & Eggs": "🧀",
-  Pantry: "🥫",
-  Frozen: "🧊",
-  Other: "🧺",
+const CATEGORY_ICON: Record<Category, LucideIcon> = {
+  Produce: Apple,
+  "Meat & Fish": Beef,
+  "Dairy & Eggs": Egg,
+  Pantry: Wheat,
+  Frozen: Snowflake,
+  Other: ShoppingBasket,
 };
 
 export function ShoppingClient({
@@ -38,7 +50,7 @@ export function ShoppingClient({
   if (!planId) {
     return (
       <div className="space-y-3 py-10 text-center">
-        <div className="text-4xl">🛒</div>
+        <ShoppingBasket className="mx-auto size-10 text-base-content/30" />
         <h1 className="text-xl font-bold">No shopping list yet</h1>
         <p className="text-sm text-base-content/60">
           Plan a fortnight and generate the list from your meals.
@@ -67,7 +79,7 @@ export function ShoppingClient({
           }
           title="Rebuild from meals (keeps manual adds)"
         >
-          ↻ Regenerate
+          <RefreshCw className="size-4" /> Regenerate
         </button>
       </div>
 
@@ -87,10 +99,11 @@ export function ShoppingClient({
         CATEGORY_ORDER.map((cat) => {
           const rows = grouped[cat];
           if (!rows.length) return null;
+          const Icon = CATEGORY_ICON[cat];
           return (
             <section key={cat}>
               <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold">
-                <span aria-hidden>{CATEGORY_ICON[cat]}</span> {cat}
+                <Icon className="size-4 text-base-content/60" /> {cat}
               </h2>
               <ul className="divide-y divide-base-200 overflow-hidden rounded-xl bg-base-100 shadow-sm">
                 {rows.map((item) => (
@@ -123,7 +136,7 @@ export function ShoppingClient({
                     </span>
                     {item.source === "manual" && (
                       <button
-                        className="btn btn-ghost btn-xs px-2"
+                        className="btn btn-ghost btn-xs btn-square"
                         onClick={() =>
                           startTransition(async () => {
                             await deleteShoppingItem(item.id);
@@ -132,7 +145,7 @@ export function ShoppingClient({
                         }
                         aria-label="Remove"
                       >
-                        ✕
+                        <X className="size-4" />
                       </button>
                     )}
                   </li>
@@ -194,7 +207,7 @@ export function ShoppingClient({
           className="btn btn-outline btn-block"
           onClick={() => setShowAdd(true)}
         >
-          + Add item
+          <Plus className="size-4" /> Add item
         </button>
       )}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { CalendarDays } from "lucide-react";
 import { createPlan } from "@/lib/actions";
 import { formatDate, fromISODate, addDays } from "@/lib/dates";
 
@@ -10,7 +11,7 @@ export function StartPlan({ suggestedStartISO }: { suggestedStartISO: string }) 
 
   return (
     <div className="mx-auto max-w-md space-y-4 py-8 text-center">
-      <div className="text-5xl">🗓️</div>
+      <CalendarDays className="mx-auto size-12 text-primary" />
       <h1 className="text-2xl font-bold tracking-tight">Plan a fortnight</h1>
       <p className="text-sm text-base-content/60">
         Cook nights auto-fill from your settings (Jamie &amp; Megan), then you

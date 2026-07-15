@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/AppShell";
 import { PlannerClient } from "@/components/planner/PlannerClient";
 import { StartPlan } from "@/components/planner/StartPlan";
 import { getActivePlan, getCooks, getPlanDays, getRecipes } from "@/lib/data";
@@ -15,24 +14,18 @@ export default async function PlannerPage() {
 
   if (!plan) {
     const suggested = toISODate(nextMonday(new Date()));
-    return (
-      <AppShell>
-        <StartPlan suggestedStartISO={suggested} />
-      </AppShell>
-    );
+    return <StartPlan suggestedStartISO={suggested} />;
   }
 
   const days = await getPlanDays(plan.id);
 
   return (
-    <AppShell>
-      <PlannerClient
-        plan={plan}
-        days={days}
-        recipes={recipes}
-        cooks={cooks}
-        newPlanStartISO={toISODate(nextMonday(new Date()))}
-      />
-    </AppShell>
+    <PlannerClient
+      plan={plan}
+      days={days}
+      recipes={recipes}
+      cooks={cooks}
+      newPlanStartISO={toISODate(nextMonday(new Date()))}
+    />
   );
 }

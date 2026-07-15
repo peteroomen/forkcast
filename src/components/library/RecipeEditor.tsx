@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { TriangleAlert, X } from "lucide-react";
 import { upsertRecipe } from "@/lib/actions";
 import {
   CATEGORIES,
@@ -183,7 +184,8 @@ export function RecipeEditor({ recipe, onClose, onDelete, busy }: Props) {
             </div>
             {celery.length > 0 && (
               <div className="alert alert-error mb-2 px-3 py-2 text-xs">
-                ⚠️ No celery allowed — swap for {CELERY_SUBSTITUTES.join(" / ")}.
+                <TriangleAlert className="size-4" />
+                No celery allowed — swap for {CELERY_SUBSTITUTES.join(" / ")}.
               </div>
             )}
             <div className="space-y-1">
@@ -230,12 +232,13 @@ export function RecipeEditor({ recipe, onClose, onDelete, busy }: Props) {
                   </select>
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm px-2"
+                    className="btn btn-ghost btn-sm btn-square"
+                    aria-label="Remove ingredient"
                     onClick={() =>
                       setIngredients((prev) => prev.filter((_, idx) => idx !== i))
                     }
                   >
-                    ✕
+                    <X className="size-4" />
                   </button>
                 </div>
               ))}
