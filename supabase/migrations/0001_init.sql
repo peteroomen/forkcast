@@ -1,24 +1,17 @@
 -- Forkcast — initial schema
--- Single-owner data model: every table carries owner_id -> auth.users, with
--- RLS policies `using (auth.uid() = owner_id)`. Designed for multi-user later
--- (each cook logs in with their own uuid) without a schema change.
+-- Lives in its own Postgres schema `forkcast` inside the shared `personal-apps`
+-- Supabase project (schema-per-app convention). Shared auth.users; every row is
+-- owner-scoped and gated by RLS so tenants never see each other's data.
+--
+-- Non-destructive to `public` (budget-app) and `stacks` (album tracker):
+-- this only CREATEs the forkcast schema and its objects.
 
-create extension if not exists "pgcrypto";
-
--- ---------------------------------------------------------------------------
--- Enums (kept as text + CHECK to mirror the Zod enums 1:1 and stay migratable)
--- ---------------------------------------------------------------------------
--- category: Produce | Meat & Fish | Dairy & Eggs | Pantry | Frozen | Other
--- cook_key: peter | megan | jamie | anyone
--- slot_type: meal | takeaway | leftover | games-night
--- pantry_status: in-stock | low | out
--- plan_status: draft | published
--- cook_role: planner | cook
+create schema if not exists forkcast;
 
 -- ---------------------------------------------------------------------------
 -- cooks
 -- ---------------------------------------------------------------------------
-create table if not exists public.cooks (
+create table if not exists forkcast.cooks (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null references auth.users (id) on delete cascade,
   name          text not null,
@@ -28,11 +21,12 @@ create table if not exists public.cooks (
   created_at    timestamptz not null default now(),
   unique (owner_id, name)
 );
+create index if not exists cooks_owner_idx on forkcast.cooks (owner_id);
 
 -- ---------------------------------------------------------------------------
 -- recipes
 -- ---------------------------------------------------------------------------
-create table if not exists public.recipes (
+create table if not exists forkcast.recipes (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null references auth.users (id) on delete cascade,
   name          text not null,
@@ -40,27 +34,24 @@ create table if not exists public.recipes (
   source_url    text,
   time_minutes  integer check (time_minutes > 0),
   servings      integer not null default 4 check (servings > 0),
-  -- ingredients: [{ name, qty, unit, category }]
-  ingredients   jsonb not null default '[]'::jsonb,
+  ingredients   jsonb not null default '[]'::jsonb, -- [{name,qty,unit,category}]
   method        text,
   tags          text[] not null default '{}',
   notes         text,
   cooked_by     text not null default 'anyone'
                   check (cooked_by in ('peter', 'megan', 'jamie', 'anyone')),
   is_favourite  boolean not null default false,
-  -- "recipe missing" state — planned by name, details still owed (handoff §10)
-  needs_recipe  boolean not null default false,
+  needs_recipe  boolean not null default false, -- "recipe owed" state (§10)
   created_at    timestamptz not null default now(),
   unique (owner_id, name)
 );
-
-create index if not exists recipes_owner_idx on public.recipes (owner_id);
-create index if not exists recipes_tags_idx on public.recipes using gin (tags);
+create index if not exists recipes_owner_idx on forkcast.recipes (owner_id);
+create index if not exists recipes_tags_idx on forkcast.recipes using gin (tags);
 
 -- ---------------------------------------------------------------------------
 -- plans + plan_days
 -- ---------------------------------------------------------------------------
-create table if not exists public.plans (
+create table if not exists forkcast.plans (
   id              uuid primary key default gen_random_uuid(),
   owner_id        uuid not null references auth.users (id) on delete cascade,
   fortnight_start date not null, -- a Monday
@@ -69,26 +60,27 @@ create table if not exists public.plans (
   created_at      timestamptz not null default now(),
   unique (owner_id, fortnight_start)
 );
+create index if not exists plans_owner_idx on forkcast.plans (owner_id);
 
-create table if not exists public.plan_days (
+create table if not exists forkcast.plan_days (
   id         uuid primary key default gen_random_uuid(),
   owner_id   uuid not null references auth.users (id) on delete cascade,
-  plan_id    uuid not null references public.plans (id) on delete cascade,
+  plan_id    uuid not null references forkcast.plans (id) on delete cascade,
   date       date not null,
   slot_type  text not null default 'meal'
                check (slot_type in ('meal', 'takeaway', 'leftover', 'games-night')),
-  recipe_id  uuid references public.recipes (id) on delete set null,
-  cook_id    uuid references public.cooks (id) on delete set null,
+  recipe_id  uuid references forkcast.recipes (id) on delete set null,
+  cook_id    uuid references forkcast.cooks (id) on delete set null,
   note       text,
   created_at timestamptz not null default now()
 );
-
-create index if not exists plan_days_plan_idx on public.plan_days (plan_id);
+create index if not exists plan_days_owner_idx on forkcast.plan_days (owner_id);
+create index if not exists plan_days_plan_idx on forkcast.plan_days (plan_id);
 
 -- ---------------------------------------------------------------------------
 -- pantry_items
 -- ---------------------------------------------------------------------------
-create table if not exists public.pantry_items (
+create table if not exists forkcast.pantry_items (
   id         uuid primary key default gen_random_uuid(),
   owner_id   uuid not null references auth.users (id) on delete cascade,
   name       text not null,
@@ -102,14 +94,15 @@ create table if not exists public.pantry_items (
   created_at timestamptz not null default now(),
   unique (owner_id, name)
 );
+create index if not exists pantry_owner_idx on forkcast.pantry_items (owner_id);
 
 -- ---------------------------------------------------------------------------
 -- shopping_items
 -- ---------------------------------------------------------------------------
-create table if not exists public.shopping_items (
+create table if not exists forkcast.shopping_items (
   id         uuid primary key default gen_random_uuid(),
   owner_id   uuid not null references auth.users (id) on delete cascade,
-  plan_id    uuid references public.plans (id) on delete cascade,
+  plan_id    uuid references forkcast.plans (id) on delete cascade,
   name       text not null,
   category   text not null default 'Other'
                check (category in ('Produce','Meat & Fish','Dairy & Eggs','Pantry','Frozen','Other')),
@@ -119,19 +112,12 @@ create table if not exists public.shopping_items (
                check (source in ('generated', 'manual')),
   created_at timestamptz not null default now()
 );
-
-create index if not exists shopping_items_plan_idx on public.shopping_items (plan_id);
+create index if not exists shopping_owner_idx on forkcast.shopping_items (owner_id);
+create index if not exists shopping_plan_idx on forkcast.shopping_items (plan_id);
 
 -- ---------------------------------------------------------------------------
--- Row Level Security — owner-only access on every table
+-- Row Level Security — owner-only on EVERY table
 -- ---------------------------------------------------------------------------
-alter table public.cooks          enable row level security;
-alter table public.recipes        enable row level security;
-alter table public.plans          enable row level security;
-alter table public.plan_days      enable row level security;
-alter table public.pantry_items   enable row level security;
-alter table public.shopping_items enable row level security;
-
 do $$
 declare
   t text;
@@ -140,11 +126,23 @@ begin
     'cooks','recipes','plans','plan_days','pantry_items','shopping_items'
   ]
   loop
+    execute format('alter table forkcast.%I enable row level security;', t);
+    execute format('drop policy if exists "own %1$s" on forkcast.%1$I;', t);
     execute format($f$
-      create policy %1$s_owner_all on public.%1$s
+      create policy "own %1$s" on forkcast.%1$I
         for all
         using (auth.uid() = owner_id)
         with check (auth.uid() = owner_id);
     $f$, t);
   end loop;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Grants — let PostgREST/API roles reach the schema (RLS still gates rows;
+-- anon has no auth.uid() so it reads nothing).
+-- ---------------------------------------------------------------------------
+grant usage on schema forkcast to anon, authenticated, service_role;
+grant all on all tables    in schema forkcast to anon, authenticated, service_role;
+grant all on all sequences in schema forkcast to anon, authenticated, service_role;
+alter default privileges in schema forkcast grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema forkcast grant all on sequences to anon, authenticated, service_role;

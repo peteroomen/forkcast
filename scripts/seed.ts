@@ -29,6 +29,7 @@ if (!url || !serviceKey || !ownerId) {
 
 const db = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
+  db: { schema: "forkcast" },
 });
 
 function recipeRow(r: SeedRecipe) {

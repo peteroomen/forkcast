@@ -14,6 +14,8 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Forkcast lives in its own schema in the shared personal-apps project.
+      db: { schema: "forkcast" },
       cookies: {
         getAll() {
           return cookieStore.getAll();
