@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   BookOpen,
+  ChevronRight,
   Package,
   ShoppingCart,
   Sparkles,
@@ -84,20 +85,27 @@ export default async function HomePage() {
         <Tile href="/pantry" icon={Package} label="Pantry check" />
       </section>
 
-      {/* Missing recipes nudge */}
+      {/* Missing recipes nudge — compact, tappable through to the library */}
       {missing.length > 0 && (
-        <section className="alert border border-warning/30 bg-warning/10">
-          <TriangleAlert className="size-5 text-warning" />
-          <div>
-            <h3 className="font-semibold">
+        <Link
+          href="/library?filter=owed"
+          className="flex items-center gap-3 rounded-xl border border-warning/25 bg-warning/5 px-4 py-3 transition-colors hover:bg-warning/10"
+        >
+          <TriangleAlert className="size-4 shrink-0 text-warning" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">
               {missing.length} recipes owed by Peter
-            </h3>
-            <p className="text-sm text-base-content/70">
-              Planned by name, details still needed:{" "}
-              {missing.map((m) => m.name).join(", ")}.
+            </p>
+            <p className="truncate text-xs text-base-content/50">
+              {missing
+                .slice(0, 4)
+                .map((m) => m.name)
+                .join(", ")}
+              {missing.length > 4 ? `, +${missing.length - 4} more` : ""}
             </p>
           </div>
-        </section>
+          <ChevronRight className="size-4 shrink-0 text-base-content/40" />
+        </Link>
       )}
     </div>
   );

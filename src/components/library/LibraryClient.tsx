@@ -10,9 +10,21 @@ import { RecipeEditor } from "./RecipeEditor";
 
 type Filter = "all" | "favourites" | "quick" | "kid" | "owed";
 
-export function LibraryClient({ recipes }: { recipes: Recipe[] }) {
+const FILTERS: Filter[] = ["all", "favourites", "quick", "kid", "owed"];
+
+export function LibraryClient({
+  recipes,
+  initialFilter,
+}: {
+  recipes: Recipe[];
+  initialFilter?: string;
+}) {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>(
+    FILTERS.includes(initialFilter as Filter)
+      ? (initialFilter as Filter)
+      : "all",
+  );
   const [editing, setEditing] = useState<Recipe | "new" | null>(null);
   const [isPending, startTransition] = useTransition();
 

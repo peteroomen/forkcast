@@ -19,11 +19,12 @@
 html,
 body {
   height: 100%;
+  /* base-200 canvas on BOTH so it stays behind content when scrolling /
+     overscrolling (html-only bg leaves a white flash past the content). */
+  background-color: var(--color-base-200);
 }
 
 body {
-  /* base-200 gives the warm/earthy canvas the prototype leaned on */
-  background-color: var(--color-base-200);
   color: var(--color-base-content);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
