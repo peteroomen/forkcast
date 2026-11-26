@@ -1,10 +1,22 @@
-import { AppShell } from "@/components/AppShell";
+import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import { BottomNav, SideNav } from "@/components/Nav";
+import { requireHousehold } from "@/lib/data";
 
-/**
- * Layout for all authed app routes. Rendering AppShell here (not in each page)
- * keeps the nav mounted across navigation, so tab switches only swap the main
- * content — paired with loading.tsx for instant feedback.
- */
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  await requireHousehold();
+  return (
+    <div className="min-h-dvh pb-24 md:pb-10">
+      <header className="sticky top-0 z-20 hidden border-b border-line bg-bg/90 backdrop-blur md:block">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+          <Link href="/library">
+            <Logo small />
+          </Link>
+          <SideNav />
+        </div>
+      </header>
+      <main className="mx-auto max-w-5xl px-4 pt-5 md:px-6 md:pt-8">{children}</main>
+      <BottomNav />
+    </div>
+  );
 }

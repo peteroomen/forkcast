@@ -1,6 +1,3 @@
-/**
- * Browser Supabase client (RLS-enforced). Use inside client components.
- */
 import { createBrowserClient } from "@supabase/ssr";
 
 export function createClient() {

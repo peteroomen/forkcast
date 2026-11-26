@@ -1,13 +1,9 @@
-import { LibraryClient } from "@/components/library/LibraryClient";
-import { getRecipes } from "@/lib/data";
+import { getLibrary, requireHousehold } from "@/lib/data";
+import { LibraryView } from "./LibraryView";
 
-export const dynamic = "force-dynamic";
+export const metadata = { title: "Meals · Forkcast" };
 
-export default async function LibraryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>;
-}) {
-  const [recipes, { filter }] = await Promise.all([getRecipes(), searchParams]);
-  return <LibraryClient recipes={recipes} initialFilter={filter} />;
+export default async function LibraryPage() {
+  const [{ members }, meals] = await Promise.all([requireHousehold(), getLibrary()]);
+  return <LibraryView meals={meals} members={members} />;
 }

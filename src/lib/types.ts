@@ -1,141 +1,98 @@
-/**
- * Zod schemas + inferred types for Forkcast.
- * DB columns are snake_case; these mirror the Supabase tables (see
- * supabase/migrations/0001_init.sql). Validate at the edges (API routes,
- * seed script, AI output) so bad shapes never reach the UI.
- */
-import { z } from "zod";
-import {
-  CATEGORIES,
-  COOKS,
-  PANTRY_STATUS,
-  RECIPE_TAGS,
-  SLOT_TYPES,
-} from "./constants";
+export type MealKind = "head" | "recipe";
+export type Course = "main" | "side" | "dessert";
+export type Effort = "quick" | "medium" | "project";
 
-// Re-export the string-literal union types so callers can pull domain enums
-// and row types from a single module.
-export type {
-  Category,
-  CookKey,
-  SlotType,
-  RecipeTag,
-  PantryStatus,
-} from "./constants";
+export interface Household {
+  id: string;
+  name: string;
+  cycle_length_days: 7 | 14;
+  cycle_start_dow: number;
+  default_servings: number;
+}
 
-export const categorySchema = z.enum(CATEGORIES);
-export const cookKeySchema = z.enum(COOKS);
-export const slotTypeSchema = z.enum(SLOT_TYPES);
-export const recipeTagSchema = z.enum(RECIPE_TAGS);
-export const pantryStatusSchema = z.enum(PANTRY_STATUS);
+export interface Member {
+  id: string;
+  household_id: string;
+  name: string;
+  user_id: string | null;
+  is_cook: boolean;
+  gives_feedback: boolean;
+  colour: string | null;
+  sort_order: number;
+}
 
-// ---- Ingredient -------------------------------------------------------------
+export interface Meal {
+  id: string;
+  household_id: string;
+  name: string;
+  kind: MealKind;
+  course: Course;
+  description: string | null;
+  notes: string | null;
+  method: string | null;
+  cuisine: string | null;
+  protein: string | null;
+  effort: Effort;
+  tags: string[];
+  target_interval_days: number | null;
+  servings: number | null;
+  total_minutes: number | null;
+  weeknight_ok: boolean;
+  batch_friendly: boolean;
+  fresh_heavy: boolean;
+  prep_note: string | null;
+  prep_lead_hours: number | null;
+  source_url: string | null;
+  source_name: string | null;
+  image_url: string | null;
+  needs_recipe: boolean;
+  archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
-export const ingredientSchema = z.object({
-  name: z.string().min(1),
-  qty: z.number().nonnegative().nullable().default(null),
-  unit: z.string().nullable().default(null),
-  category: categorySchema.default("Other"),
-});
-export type Ingredient = z.infer<typeof ingredientSchema>;
+export interface Variation {
+  id: string;
+  meal_id: string;
+  name: string;
+  notes: string | null;
+  method: string | null;
+  source_url: string | null;
+  sort_order: number;
+  archived: boolean;
+}
 
-// ---- Cook -------------------------------------------------------------------
+export interface Ingredient {
+  id: string;
+  meal_id: string;
+  variation_id: string | null;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  note: string | null;
+  section: string;
+  optional: boolean;
+  sort_order: number;
+}
 
-export const cookSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  // 0 = Monday ... 6 = Sunday. Nullable = no fixed night.
-  default_night: z.number().int().min(0).max(6).nullable(),
-  role: z.enum(["planner", "cook"]),
-});
-export type Cook = z.infer<typeof cookSchema>;
+export interface MealStats {
+  meal_id: string;
+  times_cooked: number;
+  last_cooked: string | null;
+  days_since: number | null;
+  avg_rating: number | null;
+  latest_make_again: "yes" | "maybe" | "no" | null;
+}
 
-// ---- Recipe -----------------------------------------------------------------
+export interface LogEntry {
+  id: string;
+  date: string;
+  slot_type: "cook" | "leftovers" | "takeaway" | "out";
+  meal_id: string | null;
+  variation_id: string | null;
+  cook_member_id: string | null;
+  make_again: "yes" | "maybe" | "no" | null;
+  notes: string | null;
+}
 
-export const recipeSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  cuisine: z.string().nullable().default(null),
-  source_url: z.string().url().nullable().default(null),
-  time_minutes: z.number().int().positive().nullable().default(null),
-  servings: z.number().int().positive().default(4),
-  ingredients: z.array(ingredientSchema).default([]),
-  method: z.string().nullable().default(null),
-  tags: z.array(recipeTagSchema).default([]),
-  notes: z.string().nullable().default(null),
-  cooked_by: cookKeySchema.default("anyone"),
-  is_favourite: z.boolean().default(false),
-  // "recipe missing" state — a name we plan around but don't yet have details for.
-  needs_recipe: z.boolean().default(false),
-});
-export type Recipe = z.infer<typeof recipeSchema>;
-
-/** Shape used when creating a recipe (id/owner assigned by DB). */
-export const recipeInsertSchema = recipeSchema.omit({ id: true }).partial({
-  cuisine: true,
-  source_url: true,
-  time_minutes: true,
-  method: true,
-  notes: true,
-});
-export type RecipeInsert = z.infer<typeof recipeInsertSchema>;
-
-// ---- Plan + plan days -------------------------------------------------------
-
-export const planSchema = z.object({
-  id: z.string().uuid(),
-  fortnight_start: z.string(), // ISO date (YYYY-MM-DD), a Monday
-  status: z.enum(["draft", "published"]),
-});
-export type Plan = z.infer<typeof planSchema>;
-
-export const planDaySchema = z.object({
-  id: z.string().uuid(),
-  plan_id: z.string().uuid(),
-  date: z.string(), // ISO date
-  slot_type: slotTypeSchema,
-  recipe_id: z.string().uuid().nullable(),
-  cook_id: z.string().uuid().nullable(),
-  note: z.string().nullable().default(null),
-});
-export type PlanDay = z.infer<typeof planDaySchema>;
-
-// ---- Pantry -----------------------------------------------------------------
-
-export const pantryItemSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  category: categorySchema,
-  qty: z.string().nullable().default(null), // freeform e.g. "2 tins"
-  status: pantryStatusSchema,
-  is_staple: z.boolean().default(false), // skip in quiz
-  is_food: z.boolean().default(true),
-});
-export type PantryItem = z.infer<typeof pantryItemSchema>;
-
-// ---- Shopping ---------------------------------------------------------------
-
-export const shoppingItemSchema = z.object({
-  id: z.string().uuid(),
-  plan_id: z.string().uuid().nullable(),
-  name: z.string().min(1),
-  category: categorySchema,
-  qty: z.string().nullable().default(null),
-  done: z.boolean().default(false),
-  source: z.enum(["generated", "manual"]),
-});
-export type ShoppingItem = z.infer<typeof shoppingItemSchema>;
-
-// ---- AI suggestion ----------------------------------------------------------
-
-/**
- * The AI may only suggest a MEAL NAME from the known library — never invent
- * ingredients (handoff §3, §9). The route validates the returned name against
- * the library and drops anything unknown.
- */
-export const aiSuggestionSchema = z.object({
-  meal: z.string().min(1),
-  reason: z.string().min(1),
-  time: z.number().int().positive().nullable(),
-});
-export type AiSuggestion = z.infer<typeof aiSuggestionSchema>;
+export const PROTEINS = ["beef", "chicken", "pork", "lamb", "fish", "seafood", "vegetarian", "mixed"] as const;

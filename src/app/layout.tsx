@@ -1,28 +1,30 @@
 import type { Metadata, Viewport } from "next";
+import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", axes: ["opsz"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
 export const metadata: Metadata = {
-  title: "Forkcast — family meal planner",
-  description: "Fortnightly dinner planning for the household. Plan in minutes.",
-  applicationName: "Forkcast",
+  title: "Forkcast",
+  description: "Family dinner planning: rotation, shopping lists and who's cooking.",
+  appleWebApp: { capable: true, title: "Forkcast", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5b7c3a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f3ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#171512" },
+  ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="garden">
-      <body className="min-h-screen antialiased">{children}</body>
+    <html lang="en-NZ" className={`${fraunces.variable} ${inter.variable}`}>
+      <body className="min-h-dvh font-sans antialiased">{children}</body>
     </html>
   );
 }

@@ -1,9 +1,9 @@
-import { SettingsClient } from "@/components/settings/SettingsClient";
-import { getCooks } from "@/lib/data";
+import { requireHousehold } from "@/lib/data";
+import { SettingsForm } from "./SettingsForm";
 
-export const dynamic = "force-dynamic";
+export const metadata = { title: "Settings · Forkcast" };
 
 export default async function SettingsPage() {
-  const cooks = await getCooks();
-  return <SettingsClient cooks={cooks} />;
+  const { household, members, user } = await requireHousehold();
+  return <SettingsForm household={household} members={members} email={user.email ?? ""} />;
 }

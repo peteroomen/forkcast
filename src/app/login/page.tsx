@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Utensils } from "lucide-react";
+import { Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/Logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,28 +11,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const configured =
-    typeof process.env.NEXT_PUBLIC_SUPABASE_URL === "string" &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0;
-
-  async function signInWithGoogle() {
+  async function google() {
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await createClient().auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) setError(error.message);
   }
 
-  async function sendMagicLink(e: React.FormEvent) {
+  async function magicLink(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await createClient().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: false },
     });
     setLoading(false);
     if (error) setError(error.message);
@@ -39,67 +34,44 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-base-200 p-4">
-      <div className="card w-full max-w-sm bg-base-100 shadow-xl">
-        <div className="card-body">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-content">
-              <Utensils className="size-5" />
-            </span>
-            <h1 className="text-2xl font-bold tracking-tight">Forkcast</h1>
-          </div>
-          <p className="mb-4 text-sm text-base-content/60">
-            Sign in to plan the fortnight.
-          </p>
+    <main className="flex min-h-dvh items-center justify-center px-4">
+      <div className="card w-full max-w-sm p-6">
+        <Logo />
+        <p className="mt-2 mb-6 text-[15px] text-muted">Dinner, sorted a fortnight at a time.</p>
 
-          {!configured && (
-            <div className="alert alert-warning mb-3 text-sm">
-              Supabase isn&apos;t configured yet. Add your env vars (see the
-              deploy runbook) to enable sign-in.
-            </div>
-          )}
+        <button onClick={google} className="btn-ghost w-full">
+          <svg viewBox="0 0 24 24" className="size-4" aria-hidden>
+            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z" />
+            <path fill="#34A853" d="M12 24c3.2 0 6-1.1 7.9-2.9l-3.9-3a7.2 7.2 0 0 1-10.8-3.8h-4v3.1A12 12 0 0 0 12 24z" />
+            <path fill="#FBBC05" d="M5.2 14.3a7.2 7.2 0 0 1 0-4.6V6.6h-4a12 12 0 0 0 0 10.8l4-3.1z" />
+            <path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.2 6.6l4 3.1A7.2 7.2 0 0 1 12 4.8z" />
+          </svg>
+          Continue with Google
+        </button>
 
-          <button
-            onClick={signInWithGoogle}
-            disabled={!configured}
-            className="btn btn-outline w-full"
-          >
-            Continue with Google
-          </button>
-
-          <div className="divider text-xs">or</div>
-
-          {sent ? (
-            <div className="alert alert-success text-sm">
-              Check your email for a magic link.
-            </div>
-          ) : (
-            <form onSubmit={sendMagicLink} className="flex flex-col gap-2">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="input input-bordered w-full"
-              />
-              <button
-                type="submit"
-                disabled={!configured || loading}
-                className="btn btn-primary w-full"
-              >
-                {loading ? "Sending…" : "Email me a magic link"}
-              </button>
-            </form>
-          )}
-
-          {error && (
-            <p className="mt-3 text-sm text-error" role="alert">
-              {error}
-            </p>
-          )}
+        <div className="my-5 flex items-center gap-3 text-xs text-muted">
+          <span className="h-px flex-1 bg-line" /> or <span className="h-px flex-1 bg-line" />
         </div>
+
+        {sent ? (
+          <p className="rounded-xl bg-brand-soft p-3 text-[15px] text-brand">Check your email for a sign-in link.</p>
+        ) : (
+          <form onSubmit={magicLink} className="space-y-3">
+            <input
+              type="email"
+              required
+              className="input"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <button className="btn-primary w-full" disabled={loading}>
+              <Mail className="size-4" /> Email me a link
+            </button>
+          </form>
+        )}
+        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
       </div>
-    </div>
+    </main>
   );
 }
