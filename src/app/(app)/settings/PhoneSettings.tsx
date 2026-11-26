@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Bell, BellOff, Download, Share, Smartphone } from "lucide-react";
+import { useInstall } from "@/lib/install";
 import {
   removePushSubscription, saveNotificationPrefs, savePushSubscription, sendTestNotification, type PrefsT,
 } from "./notify-actions";
 
-type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
 function urlBase64ToUint8Array(base64: string) {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -17,9 +17,7 @@ function urlBase64ToUint8Array(base64: string) {
 type DeviceState = "checking" | "not-configured" | "unsupported" | "ios-needs-install" | "blocked" | "off" | "on";
 
 export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMeat }: { prefs: PrefsT; meatFromFreezer: boolean }) {
-  const [standalone, setStandalone] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const { canPrompt, install, ios: isIOS, iosSafari, standalone } = useInstall();
   const [device, setDevice] = useState<DeviceState>("checking");
   const [prefs, setPrefs] = useState(initialPrefs);
   const [meat, setMeat] = useState(initialMeat);
@@ -29,15 +27,6 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
   useEffect(() => {
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const sa = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
-    setIsIOS(ios);
-    setStandalone(sa);
-
-    const onPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallEvent(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-
     (async () => {
       // iOS only allows web push from a Home Screen app.
       if (ios && !sa) return setDevice("ios-needs-install");
@@ -50,7 +39,6 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
       const sub = await reg.pushManager.getSubscription();
       setDevice(sub ? "on" : "off");
     })();
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
   }, []);
 
   async function turnOn() {
@@ -109,10 +97,14 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
 
       {/* Install */}
       {!standalone &&
-        (installEvent ? (
-          <button className="btn-primary w-full" onClick={async () => { await installEvent.prompt(); setInstallEvent(null); }}>
+        (canPrompt ? (
+          <button className="btn-primary w-full" onClick={install}>
             <Download className="size-4" /> Install Forkcast
           </button>
+        ) : isIOS && !iosSafari ? (
+          <p className="rounded-xl bg-surface-2 p-3 text-[13px] text-muted">
+            Open Forkcast in <strong>Safari</strong> to add it to your Home Screen. Other iPhone browsers can&apos;t.
+          </p>
         ) : isIOS ? (
           <div className="rounded-xl bg-brand-soft p-3 text-[14px] text-brand">
             <p className="flex items-center gap-1.5 font-medium"><Smartphone className="size-4" /> Add to your Home Screen</p>
@@ -123,7 +115,8 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
           </div>
         ) : (
           <p className="rounded-xl bg-surface-2 p-3 text-[13px] text-muted">
-            To install: open your browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+            No install button? Open your browser&apos;s <strong>⋮</strong> menu and choose <strong>Install app</strong> or{" "}
+            <strong>Add to Home screen</strong>. If it&apos;s already installed, open it from your home screen.
           </p>
         ))}
 

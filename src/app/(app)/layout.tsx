@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { BottomNav, SideNav } from "@/components/Nav";
+import { InstallBanner } from "@/components/InstallBanner";
 import { requireHousehold } from "@/lib/data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,7 +16,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <SideNav />
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 pt-5 md:px-6 md:pt-8">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 pt-5 md:px-6 md:pt-8">
+        <InstallBanner />
+        {children}
+      </main>
       <BottomNav />
     </div>
   );
