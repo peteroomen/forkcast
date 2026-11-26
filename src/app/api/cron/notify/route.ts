@@ -23,8 +23,10 @@ export async function GET(request: Request) {
   const now = new Date();
   const summary: { household: string; user: string; kind: string; delivered: number }[] = [];
 
-  const { data: subs } = await db.from("push_subscriptions").select("id, endpoint, p256dh, auth, user_id, household_id");
-  if (!subs?.length) return NextResponse.json({ sent: [] });
+  const { data: subs, error } = await db.from("push_subscriptions").select("id, endpoint, p256dh, auth, user_id, household_id");
+  // Surface config problems (e.g. a bad service key) instead of silently sending nothing.
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!subs.length) return NextResponse.json({ sent: [], devices: 0 });
 
   const householdIds = [...new Set(subs.map((s) => s.household_id as string))];
   for (const hid of householdIds) {
