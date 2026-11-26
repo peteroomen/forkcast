@@ -62,14 +62,12 @@ run **hourly**; each message goes out once, at or after the person's chosen time
 Production env vars: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
 `VAPID_SUBJECT`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`.
 
-Schedule it from Supabase once deployed (Vercel Hobby crons are daily-only):
+Scheduling: Supabase `pg_cron` calls the endpoint hourly at :05
+(`0006_schedule_notify.sql`; Vercel Hobby crons are daily-only). The bearer token
+is read from Supabase Vault, so set the same value in both places:
 
 ```sql
-create extension if not exists pg_cron;
-create extension if not exists pg_net;
-select cron.schedule('forkcast-notify', '5 * * * *', $$
-  select net.http_get(
-    url := 'https://<your-domain>/api/cron/notify',
-    headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
-  )$$);
+select vault.create_secret('<same value as CRON_SECRET>', 'forkcast_cron_secret');
 ```
+
+Production: https://forkcast-lime.vercel.app (functions in `icn1`, next to the DB).
