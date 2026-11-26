@@ -11,7 +11,14 @@ const COLOURS = ["#2f6b4f", "#b5552b", "#5b5fc7", "#c18a12", "#a43f7a", "#2b7fa8
 
 type M = { id?: string; key: string; name: string; colour: string | null; is_cook: boolean; gives_feedback: boolean; user_id?: string | null };
 
-export function SettingsForm({ household, members, email }: { household: Household; members: Member[]; email: string }) {
+export function SettingsForm({
+  household, members, email, phone,
+}: {
+  household: Household;
+  members: Member[];
+  email: string;
+  phone: React.ReactNode;
+}) {
   const router = useRouter();
   const [h, setH] = useState({
     name: household.name,
@@ -45,6 +52,8 @@ export function SettingsForm({ household, members, email }: { household: Househo
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="font-display text-3xl font-semibold tracking-tight">Settings</h1>
+
+      {phone}
 
       <section className="card space-y-4 p-4">
         <h2 className="font-display text-lg font-semibold">Planning</h2>

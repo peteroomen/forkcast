@@ -8,6 +8,8 @@ export interface Household {
   cycle_length_days: 7 | 14;
   cycle_start_dow: number;
   default_servings: number;
+  timezone: string;
+  meat_from_freezer: boolean;
 }
 
 export interface Member {

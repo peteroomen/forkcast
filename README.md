@@ -44,3 +44,32 @@ pnpm test                    # ingredient parser + recipe import
 
 Sign-in is Google or email magic link (existing accounts only). Add the deploy
 URL + `/auth/callback` to Supabase Auth redirect URLs.
+
+## Install + notifications
+
+Forkcast is an installable PWA (`public/sw.js`, `src/app/manifest.ts`). On iPhone,
+push only works after **Share → Add to Home Screen** (iOS 16.4+). Each person
+turns notifications on per device in Settings and picks their own times.
+
+Reminders are sent by `GET /api/cron/notify` (bearer `CRON_SECRET`), which should
+run **hourly**; each message goes out once, at or after the person's chosen time:
+
+- morning: tonight's dinner, who's cooking, same-day prep
+- evening: tomorrow's prep (meat out of the freezer, marinades) + "time to plan"
+  if the next few days have no plan
+- fresh-food check: arrives with the shopping list
+
+Production env vars: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+`VAPID_SUBJECT`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`.
+
+Schedule it from Supabase once deployed (Vercel Hobby crons are daily-only):
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+select cron.schedule('forkcast-notify', '5 * * * *', $$
+  select net.http_get(
+    url := 'https://<your-domain>/api/cron/notify',
+    headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
+  )$$);
+```

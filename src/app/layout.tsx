@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
+import { RegisterSW } from "@/components/RegisterSW";
 
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", axes: ["opsz"] });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
   title: "Forkcast",
   description: "Family dinner planning: rotation, shopping lists and who's cooking.",
   appleWebApp: { capable: true, title: "Forkcast", statusBarStyle: "default" },
+  icons: { icon: "/icon.svg", apple: "/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -24,7 +26,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-NZ" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="min-h-dvh font-sans antialiased">{children}</body>
+      <body className="min-h-dvh font-sans antialiased">
+        {children}
+        <RegisterSW />
+      </body>
     </html>
   );
 }
