@@ -14,7 +14,7 @@ function urlBase64ToUint8Array(base64: string) {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
-type DeviceState = "checking" | "unsupported" | "ios-needs-install" | "blocked" | "off" | "on";
+type DeviceState = "checking" | "not-configured" | "unsupported" | "ios-needs-install" | "blocked" | "off" | "on";
 
 export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMeat }: { prefs: PrefsT; meatFromFreezer: boolean }) {
   const [standalone, setStandalone] = useState(false);
@@ -44,6 +44,7 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
         return setDevice("unsupported");
       }
+      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) return setDevice("not-configured");
       if (Notification.permission === "denied") return setDevice("blocked");
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
@@ -145,6 +146,9 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
       )}
       {device === "blocked" && (
         <p className="text-[13px] text-accent">Notifications are blocked for Forkcast. Allow them in your phone&apos;s settings, then come back.</p>
+      )}
+      {device === "not-configured" && (
+        <p className="text-[13px] text-muted">Notifications aren&apos;t set up on the server yet (missing push keys).</p>
       )}
       {device === "unsupported" && <p className="text-[13px] text-muted">This browser can&apos;t do notifications.</p>}
 
