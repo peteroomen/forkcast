@@ -115,8 +115,9 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
           </div>
         ) : (
           <p className="rounded-xl bg-surface-2 p-3 text-[13px] text-muted">
-            No install button? Open your browser&apos;s <strong>⋮</strong> menu and choose <strong>Install app</strong> or{" "}
-            <strong>Add to Home screen</strong>. If it&apos;s already installed, open it from your home screen.
+            <strong>Install now:</strong> open Chrome&apos;s <strong>⋮</strong> menu and choose <strong>Add to Home screen</strong>{" "}
+            (or <strong>Install app</strong>). Chrome only offers its own Install button once you&apos;ve used the site for
+            about 30 seconds; it&apos;ll pop up here when it does.
           </p>
         ))}
 

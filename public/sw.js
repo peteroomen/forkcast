@@ -1,6 +1,29 @@
 // Forkcast service worker: installability + push notifications.
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+const OFFLINE_CACHE = "forkcast-offline-v1";
+const OFFLINE_ASSETS = ["/offline.html", "/icon-192.png"];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(OFFLINE_CACHE).then((c) => c.addAll(OFFLINE_ASSETS)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("forkcast-offline-") && k !== OFFLINE_CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+// Network first for page loads; show a friendly page when there's no signal.
+// Everything else (data, assets) goes straight to the network.
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.mode === "navigate") {
+    event.respondWith(fetch(req).catch(() => caches.match("/offline.html")));
+  } else if (OFFLINE_ASSETS.includes(new URL(req.url).pathname)) {
+    event.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
+  }
+});
 
 self.addEventListener("push", (event) => {
   let data = {};
