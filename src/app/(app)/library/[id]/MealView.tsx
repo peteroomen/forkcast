@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, BookOpen, Brain, CalendarCheck, ExternalLink, Pencil, Repeat, Snowflake, Sprout, Timer, Trash2, Users,
+  ArrowLeft, BookOpen, Brain, Download, Loader2, CalendarCheck, ExternalLink, Pencil, Repeat, Snowflake, Sprout, Timer, Trash2, Users,
 } from "lucide-react";
 import type { MealDetail } from "@/lib/data";
 import type { Ingredient, Member } from "@/lib/types";
@@ -11,7 +12,7 @@ import { formatIngredient, scaleQuantity } from "@/lib/ingredients";
 import { SECTION_LABEL } from "@/lib/sections";
 import { agoLabel, dueInfo, frequencyLabel } from "@/lib/rotation";
 import { CookDots, DueBadge, EffortTag, PROTEIN_LABEL } from "@/components/bits";
-import { deleteLog } from "../actions";
+import { deleteLog, fillFromLinks } from "../actions";
 import { LogDinner } from "./LogDinner";
 
 const RATING = { 1: "👍", 0: "😐", [-1]: "👎" } as Record<number, string>;
@@ -27,7 +28,7 @@ export function MealView({ detail, members, householdServings }: { detail: MealD
     () => ingredients.filter((i) => i.variation_id === null || i.variation_id === variationId),
     [ingredients, variationId],
   );
-  const canScale = !!meal.servings && meal.servings !== householdServings;
+  const canScale = !!meal.servings && meal.servings < householdServings;
   const factorFrom = scaled && canScale ? meal.servings : null;
 
   const due = dueInfo(stats?.days_since ?? null, meal.target_interval_days);
@@ -120,9 +121,13 @@ export function MealView({ detail, members, householdServings }: { detail: MealD
             )}
           </div>
           {shown.length === 0 ? (
-            <p className="mt-2 text-[14px] text-muted">
-              No ingredients yet. <Link className="text-brand underline" href={`/library/${meal.id}/edit`}>Add them</Link> so this can go on the shopping list.
-            </p>
+            meal.source_url && ingredients.length === 0 ? (
+              <FetchFromLink mealId={meal.id} />
+            ) : (
+              <p className="mt-2 text-[14px] text-muted">
+                No ingredients yet. <Link className="text-brand underline" href={`/library/${meal.id}/edit`}>Add them</Link> so this can go on the shopping list.
+              </p>
+            )
           ) : (
             <IngredientList items={shown} from={factorFrom} to={householdServings} />
           )}
@@ -246,6 +251,32 @@ function IngredientList({ items, from, to }: { items: Ingredient[]; from: number
           </ul>
         </div>
       ))}
+    </div>
+  );
+}
+
+function FetchFromLink({ mealId }: { mealId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="mt-2">
+      <p className="text-[14px] text-muted">No ingredients yet, but there&apos;s a recipe link.</p>
+      <button
+        className="btn-primary mt-2 w-full"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            setError(null);
+            const res = await fillFromLinks([mealId]);
+            if (res.failed.length) setError(res.failed[0].error);
+            router.refresh();
+          })
+        }
+      >
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />} Get ingredients from the recipe
+      </button>
+      {error && <p className="mt-2 text-[13px] text-accent">{error}</p>}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { ListPageData, ShopItem, ShopList } from "@/lib/list-data";
 import { SECTIONS } from "@/lib/sections";
 import { addDays, dayLabel } from "@/lib/notifications";
+import { fillFromLinks } from "../library/actions";
 import { addItem, alwaysHave, answerCheck, buildShopping, ensureAdhocList, finishList, removeItem, setChecked } from "./actions";
 
 const SECTION_LABEL = Object.fromEntries(SECTIONS.map((s) => [s.id, s.label]));
@@ -50,7 +51,8 @@ export function ListScreen({ data }: { data: ListPageData }) {
     tab === "adhoc" ? adhoc : planLists.find((l) => l.kind === tab) ?? planLists.find((l) => l.kind === "main") ?? null;
 
   const [building, startBuild] = useTransition();
-  const [missing, setMissing] = useState<{ meal_id: string; name: string }[]>([]);
+  const [missingOverride, setMissing] = useState<{ meal_id: string; name: string }[] | null>(null);
+  const missing = missingOverride ?? plan?.missing ?? [];
   const [error, setError] = useState<string | null>(null);
 
   function build() {
@@ -61,6 +63,25 @@ export function ListScreen({ data }: { data: ListPageData }) {
       if (!res.ok) return setError(res.error);
       setMissing(res.missing ?? []);
       setTab("main");
+      router.refresh();
+    });
+  }
+
+  const [fetchNote, setFetchNote] = useState<string | null>(null);
+
+  /** Pull ingredients for flagged meals that have recipe links, then rebuild the list. */
+  function fetchLinks() {
+    if (!planId) return;
+    setFetchNote(null);
+    startBuild(async () => {
+      const res = await fillFromLinks(missing.map((m) => m.meal_id));
+      const rebuilt = await buildShopping(planId);
+      if (rebuilt.ok) setMissing(rebuilt.missing ?? []);
+      const parts = [
+        res.filled.length ? `Got ingredients for ${res.filled.map((f) => f.name).join(", ")}.` : "No recipe links to read for these.",
+        ...res.failed.map((f) => `${f.name}: ${f.error}`),
+      ];
+      setFetchNote(parts.join(" "));
       router.refresh();
     });
   }
@@ -123,7 +144,7 @@ export function ListScreen({ data }: { data: ListPageData }) {
 
       {error && <p className="mt-3 rounded-xl bg-accent-soft p-3 text-[14px] text-accent">{error}</p>}
 
-      {missing.length > 0 && (
+      {missing.length > 0 && planLists.length > 0 && (
         <div className="mt-3 rounded-xl bg-warn-soft p-3 text-[14px] text-warn">
           <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle className="size-4" /> No ingredients written down for:</p>
           <p className="mt-1">
@@ -134,7 +155,11 @@ export function ListScreen({ data }: { data: ListPageData }) {
               </span>
             ))}
           </p>
-          <p className="mt-1 text-[13px]">Add them (or add items by hand below), then tap Update from plan.</p>
+          <p className="mt-1 text-[13px]">Add them (or add items by hand below), then tap Update.</p>
+          <button className="btn-ghost mt-2 w-full border-warn/40 py-2 text-[14px]" onClick={fetchLinks} disabled={building}>
+            {building ? <Loader2 className="size-4 animate-spin" /> : null} Get ingredients from recipe links
+          </button>
+          {fetchNote && <p className="mt-2 text-[13px]">{fetchNote}</p>}
         </div>
       )}
 

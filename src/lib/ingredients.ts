@@ -180,6 +180,8 @@ export function nzName(name: string): string {
   const lower = n.toLowerCase();
   let out = lower;
   for (const [re, rep] of NZ_NAMES) out = out.replace(re, rep);
+  // "green onions/scallions" both become spring onions: don't say it twice.
+  out = out.replace(/\b([a-z][a-z ]*?)\s*\/\s*\1\b/g, "$1");
   if (out !== lower) n = out;
   return n;
 }
@@ -235,13 +237,15 @@ export function formatIngredient(i: { quantity: number | null; unit: string | nu
 const MEASURED = new Set(["g", "kg", "ml", "l", "tbsp", "tsp", "cup"]);
 
 /**
- * Scale a quantity between serving counts. Measured units scale exactly;
+ * Scale a recipe up to the household. Measured units scale exactly;
  * countable things (onions, cloves, tins) round to a whole number, never below 1.
  */
 export function scaleQuantity(
   q: number | null, fromServings: number | null, toServings: number, unit: string | null = "g",
 ): number | null {
   if (q === null || !fromServings) return q;
+  // Never scale down: a recipe for 10 (a whole lasagna) is cooked whole.
+  if (fromServings >= toServings) return q;
   const scaled = (q * toServings) / fromServings;
   if (unit !== null && MEASURED.has(unit)) return scaled;
   if (q < 1) return scaled; // "½ onion" stays fractional

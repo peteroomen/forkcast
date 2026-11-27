@@ -147,11 +147,74 @@ export async function saveMeal(input: MealInputT): Promise<SaveResult> {
   if (rows.length) {
     const { error } = await supabase.from("meal_ingredients").insert(rows);
     if (error) return { ok: false, error: error.message };
+  } else if (fields.source_url) {
+    // A recipe link but no ingredients typed: fetch them from the link.
+    await fillFromLink(supabase, household_id, mealId);
   }
 
   revalidatePath("/library");
   revalidatePath(`/library/${mealId}`);
   return { ok: true, id: mealId };
+}
+
+type Db = Awaited<ReturnType<typeof requireHousehold>>["supabase"];
+
+/**
+ * Fill a meal's ingredients from its recipe link (and any empty method, time,
+ * servings, picture or cuisine). Leaves existing ingredients alone.
+ */
+async function fillFromLink(supabase: Db, household_id: string, mealId: string): Promise<{ name: string; count: number } | { name: string; error: string }> {
+  const { data: meal } = await supabase.from("meals").select("*").eq("id", mealId).single();
+  if (!meal) return { name: "?", error: "Meal not found" };
+  if (!meal.source_url) return { name: meal.name, error: "No recipe link" };
+  const { count } = await supabase.from("meal_ingredients").select("id", { count: "exact", head: true }).eq("meal_id", mealId);
+  if (count) return { name: meal.name, count: 0 };
+
+  let recipe: ImportedRecipe;
+  try {
+    recipe = await importRecipeFromUrl(meal.source_url);
+  } catch (e) {
+    return { name: meal.name, error: e instanceof Error ? e.message : "Couldn't read the link" };
+  }
+  const rows = ingredientRows(recipe.ingredients, { household_id, meal_id: mealId, variation_id: null });
+  if (!rows.length) return { name: meal.name, error: "The page had no ingredient list" };
+  const { error } = await supabase.from("meal_ingredients").insert(rows);
+  if (error) return { name: meal.name, error: error.message };
+
+  await supabase
+    .from("meals")
+    .update({
+      method: meal.method ?? recipe.method,
+      // The quantities are the recipe's, so its serving count is what they're for.
+      servings: recipe.servings ?? meal.servings,
+      total_minutes: meal.total_minutes ?? recipe.total_minutes,
+      image_url: meal.image_url ?? recipe.image_url,
+      cuisine: meal.cuisine ?? recipe.cuisine,
+      source_name: meal.source_name ?? recipe.source_name,
+      needs_recipe: false,
+    })
+    .eq("id", mealId);
+  return { name: meal.name, count: rows.length };
+}
+
+/**
+ * Fetch ingredients from recipe links for the given meals (or every linked
+ * meal that has none). Returns what worked and what didn't.
+ */
+export async function fillFromLinks(mealIds?: string[]): Promise<{ filled: { name: string; count: number }[]; failed: { name: string; error: string }[] }> {
+  const { supabase, household } = await requireHousehold();
+  let q = supabase.from("meals").select("id").eq("household_id", household.id).not("source_url", "is", null).eq("archived", false);
+  if (mealIds?.length) q = q.in("id", mealIds);
+  const { data: meals } = await q;
+  const results = await Promise.all((meals ?? []).map((m) => fillFromLink(supabase, household.id, m.id)));
+  revalidatePath("/library");
+  revalidatePath("/plan");
+  revalidatePath("/list");
+  for (const m of meals ?? []) revalidatePath(`/library/${m.id}`);
+  return {
+    filled: results.filter((r): r is { name: string; count: number } => "count" in r && r.count > 0),
+    failed: results.filter((r): r is { name: string; error: string } => "error" in r && r.error !== "No recipe link"),
+  };
 }
 
 export async function archiveMeal(id: string) {

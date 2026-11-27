@@ -75,3 +75,10 @@ test("scaled amounts read like a person wrote them", () => {
   assert.equal(formatIngredient({ quantity: 1 / 3, unit: "cup", name: "brandy", note: null }), "⅓ cup brandy");
   assert.equal(formatIngredient({ quantity: 3.75, unit: "tbsp", name: "flour", note: null }), "3¾ tbsp flour");
 });
+test("NZ names don't double up", () => {
+  assert.equal(parseIngredient("2 green onions/scallions").name, "spring onions");
+});
+test("never scales down: big recipes are cooked whole", () => {
+  assert.equal(scaleQuantity(500, 10, 5, "g"), 500);
+  assert.equal(scaleQuantity(250, 2, 5, "g"), 625);
+});

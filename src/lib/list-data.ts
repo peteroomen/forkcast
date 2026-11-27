@@ -38,7 +38,7 @@ export interface PantryItem {
 export interface ListPageData {
   today: string;
   householdId: string;
-  plans: { id: string; start_date: string; length_days: number; planned: number }[];
+  plans: { id: string; start_date: string; length_days: number; planned: number; missing: { meal_id: string; name: string }[] }[];
   lists: ShopList[];
   pantry: PantryItem[];
   mealNames: Record<string, string>;
@@ -50,18 +50,26 @@ export async function getListPage(): Promise<ListPageData> {
   const today = localDate(new Date(), household.timezone);
 
   const [plansRes, listsRes, pantryRes, mealsRes] = await Promise.all([
-    supabase.from("plans").select("id, start_date, length_days, plan_slots(meal_id, slot_type)").eq("household_id", hid).gte("start_date", addDays(today, -13)).order("start_date"),
+    supabase.from("plans").select("id, start_date, length_days, plan_slots(meal_id, slot_type, date)").eq("household_id", hid).gte("start_date", addDays(today, -13)).order("start_date"),
     supabase.from("shopping_lists").select("*, shopping_items(*)").eq("household_id", hid).eq("status", "open").order("created_at"),
     supabase.from("pantry_items").select("id, name, tier, section, regular_quantity").eq("household_id", hid).order("name"),
     supabase.from("meals").select("id, name").eq("household_id", hid),
   ]);
+  const { data: ingMeals } = await supabase.from("meal_ingredients").select("meal_id").eq("household_id", hid);
+  const hasIngredients = new Set((ingMeals ?? []).map((i) => i.meal_id));
+  const nameOf = new Map((mealsRes.data ?? []).map((m) => [m.id, m.name]));
 
   const plans = (plansRes.data ?? [])
     .filter((p) => addDays(p.start_date, p.length_days) > today)
-    .map(({ plan_slots, ...p }) => ({
-      ...p,
-      planned: (plan_slots as { meal_id: string | null; slot_type: string }[]).filter((s) => s.slot_type === "cook" && s.meal_id).length,
-    }));
+    .map(({ plan_slots, ...p }) => {
+      const cooked = (plan_slots as { meal_id: string | null; slot_type: string; date: string }[]).filter((s) => s.slot_type === "cook" && s.meal_id);
+      const missingIds = [...new Set(cooked.filter((s) => s.date >= today && !hasIngredients.has(s.meal_id!)).map((s) => s.meal_id!))];
+      return {
+        ...p,
+        planned: cooked.length,
+        missing: missingIds.map((id) => ({ meal_id: id, name: nameOf.get(id) ?? "?" })),
+      };
+    });
 
   const lists: ShopList[] = (listsRes.data ?? []).map(({ shopping_items, ...l }) => ({
     ...l,
