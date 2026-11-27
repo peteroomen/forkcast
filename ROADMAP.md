@@ -68,6 +68,31 @@ which is awkward.
 - The planner treats ready-made meals as the quickest option for busy nights, and
   can suggest "keep one in the freezer" as a fallback night.
 
+## 5. Voice and Google Keep
+
+The family already uses Google Keep for shopping, and "Hey Google, add milk to the
+shopping list" is the natural way to add things. Two routes, to research before
+building (the Google side changes often, so check what's current):
+
+- **Keep sync**: Google Assistant / Gemini put "add to my shopping list" items
+  into Keep (when Keep is set as the shopping list provider), so syncing Forkcast
+  with a Keep list gets voice for free. The catch: Google's official Keep API is
+  only for Google Workspace accounts, not personal Gmail ones. Unofficial libraries
+  exist but log in as you and break when Google changes things. Worth checking
+  for anything newer.
+- **Our own voice app**: Google shut down Conversational Actions (third-party
+  "Talk to Forkcast" apps) in 2023, so a classic Google Home app may not be
+  possible any more. Options to check: Gemini extensions or other ways to add
+  your own actions, Android app shortcuts / App Actions if Forkcast became a
+  native or TWA app, or a Home Assistant bridge if you run one.
+- **Either way, Forkcast-side**: an "inbox" for items arriving from outside
+  (Keep, voice, share sheet) that land on the Extras list, auto-sorted into
+  sections, and voice-friendly commands like "we had tacos tonight" or "Megan's
+  cooking Thursday".
+
+Pick based on what's actually possible today: Keep sync if there's a reliable
+path, otherwise the share sheet + PWA shortcut as a quick win.
+
 ## Also queued
 
 - **Tonight screen**: what's on, who's cooking, prep steps, and the recipe in
