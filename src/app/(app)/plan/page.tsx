@@ -1,12 +1,10 @@
-import { CalendarDays } from "lucide-react";
-import { ComingSoon } from "@/components/ComingSoon";
+import { requireHousehold } from "@/lib/data";
+import { getPlanPage } from "@/lib/plan-data";
+import { PlanScreen } from "./PlanScreen";
 
-export default function PlanPage() {
-  return (
-    <ComingSoon
-      icon={CalendarDays}
-      title="Fortnight planner"
-      body="Coming next: claim nights, rotation-aware suggestions, leftovers and takeaway nights. Logging meals in the library now gives it history to work with."
-    />
-  );
+export const metadata = { title: "Plan · Forkcast" };
+
+export default async function PlanPage() {
+  const [{ members, household }, data] = await Promise.all([requireHousehold(), getPlanPage()]);
+  return <PlanScreen data={data} members={members} cycleLength={household.cycle_length_days} />;
 }

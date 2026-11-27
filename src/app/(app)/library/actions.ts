@@ -177,6 +177,7 @@ const LogInput = z.object({
   cook_member_id: z.string().uuid().nullable(),
   make_again: z.enum(["yes", "maybe", "no"]).nullable(),
   notes: nullableText,
+  plan_slot_id: z.string().uuid().nullable().optional(),
   ratings: z.array(z.object({ member_id: z.string().uuid(), rating: z.union([z.literal(-1), z.literal(0), z.literal(1)]) })),
 });
 
@@ -203,6 +204,7 @@ export async function logMeal(input: z.input<typeof LogInput>): Promise<{ ok: bo
   }
   revalidatePath("/library");
   revalidatePath(`/library/${entry.meal_id}`);
+  revalidatePath("/plan");
   return { ok: true };
 }
 

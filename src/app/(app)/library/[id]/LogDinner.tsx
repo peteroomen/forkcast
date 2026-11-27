@@ -17,16 +17,18 @@ const FACES: { v: -1 | 0 | 1; face: string; label: string }[] = [
 
 /** The at-the-table card: date, who cooked, everyone's thumbs, make again? */
 export function LogDinner({
-  meal, variations, members, defaultVariationId, defaultCookId, onClose,
+  meal, variations, members, defaultVariationId, defaultCookId, onClose, planSlotId = null, defaultDate,
 }: {
-  meal: Meal;
-  variations: Variation[];
+  meal: Pick<Meal, "id" | "name">;
+  planSlotId?: string | null;
+  defaultDate?: string;
+  variations: Pick<Variation, "id" | "name">[];
   members: Member[];
   defaultVariationId: string | null;
   defaultCookId: string | null;
   onClose: () => void;
 }) {
-  const [date, setDate] = useState(todayNZ());
+  const [date, setDate] = useState(defaultDate ?? todayNZ());
   const [variationId, setVariationId] = useState(defaultVariationId);
   const [cookId, setCookId] = useState<string | null>(defaultCookId);
   const [ratings, setRatings] = useState<Record<string, -1 | 0 | 1>>({});
@@ -46,6 +48,7 @@ export function LogDinner({
         cook_member_id: cookId,
         make_again: makeAgain,
         notes,
+        plan_slot_id: planSlotId,
         ratings: Object.entries(ratings).map(([member_id, rating]) => ({ member_id, rating })),
       });
       if (res.ok) onClose();
