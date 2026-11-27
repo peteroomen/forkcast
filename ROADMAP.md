@@ -27,21 +27,22 @@ source.
 
 ## 2. Speed
 
-Moving between pages is noticeably slow. Likely causes, to measure first (Vercel
-Speed Insights / server timings):
+**Done (first pass):** measured from the US against production, warm page loads
+went from ~1.15s to ~0.43s and cold ones from ~3.4s to ~1.4s.
+- Middleware no longer calls Supabase Auth on every request (`getSession` from
+  the cookie; RLS still verifies the token on every query).
+- Pages read the user from the token, and household + members load in one query.
+- Visited tabs stay in the client router cache for 30s, so switching back is
+  instant (~60ms); saving anything clears it.
+- A skeleton appears the moment you tap a tab.
 
-- Every navigation is a full server render that waits on several Supabase round
-  trips (auth check, household, then the page's queries), some of them one after
-  another.
-- Middleware calls `auth.getUser()` on every request: a network round trip to
-  Supabase Auth before anything renders. Verify the JWT locally (`getClaims`)
-  instead.
-- No loading states, so a tap feels like nothing happened.
-
-Fixes to try: `loading.tsx` skeletons per tab, prefetching the four tabs, keeping
-fetched data client-side between tab switches (React Query or a small store) with
-optimistic updates everywhere, folding the page queries into one RPC or view per
-screen, and caching the meal library (it rarely changes).
+**Next:**
+- Cold starts: check Vercel Fluid compute is on for the project; consider a
+  light keep-warm ping during the day.
+- Optimistic updates everywhere a tap waits on the server (library edits,
+  settings), and keep the meal library client-side between pages.
+- Fold each screen's queries into one RPC or view (the plan page makes six).
+- Real numbers from phones: Vercel Speed Insights.
 
 ## 3. Inline editing and tidier navigation
 
