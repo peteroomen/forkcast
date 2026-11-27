@@ -27,6 +27,8 @@ export interface Plan {
 export interface PlanMeal extends PlannerMeal {
   kind: "head" | "recipe";
   prep_note: string | null;
+  /** Has ingredients written down (so it can reach the shopping list). */
+  has_ingredients: boolean;
   variations: { id: string; name: string }[];
 }
 
@@ -57,6 +59,8 @@ export async function getPlanPage(): Promise<PlanPageData> {
     supabase.from("meal_stats").select("*").eq("household_id", hid),
     supabase.from("meal_log").select("date, meal_id, variation_id").eq("household_id", hid).gte("date", addDays(today, -365)),
   ]);
+  const { data: ingMeals } = await supabase.from("meal_ingredients").select("meal_id").eq("household_id", hid);
+  const withIngredients = new Set((ingMeals ?? []).map((i) => i.meal_id));
 
   const plans: Plan[] = (plansRes.data ?? [])
     .map(({ plan_slots, ...p }) => ({ ...p, slots: [...(plan_slots as PlanSlot[])].sort((a, b) => a.date.localeCompare(b.date)) }) as Plan)
@@ -74,7 +78,7 @@ export async function getPlanPage(): Promise<PlanPageData> {
       id: m.id, name: m.name, kind: m.kind, course: m.course, effort: m.effort, total_minutes: m.total_minutes,
       weeknight_ok: m.weeknight_ok, fresh_heavy: m.fresh_heavy, batch_friendly: m.batch_friendly, protein: m.protein,
       cuisine: m.cuisine, target_interval_days: m.target_interval_days, prep_note: m.prep_note,
-      cook_ids: cookMap.get(m.id) ?? [], variations: varMap.get(m.id) ?? [],
+      cook_ids: cookMap.get(m.id) ?? [], variations: varMap.get(m.id) ?? [], has_ingredients: withIngredients.has(m.id),
       days_since: s?.days_since ?? null, avg_rating: s?.avg_rating == null ? null : Number(s.avg_rating),
       latest_make_again: s?.latest_make_again ?? null,
     };

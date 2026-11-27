@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo";
 
 export default async function Welcome() {
   const { household, user } = await getContext();
-  if (household) redirect("/library");
+  if (household) redirect("/plan");
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
       <div className="card w-full max-w-sm p-6">

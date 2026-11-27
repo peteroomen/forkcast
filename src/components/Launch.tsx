@@ -10,7 +10,7 @@ export function Launch() {
   useEffect(() => {
     createClient()
       .auth.getSession()
-      .then(({ data }) => router.replace(data.session ? "/library" : "/login"));
+      .then(({ data }) => router.replace(data.session ? "/plan" : "/login"));
   }, [router]);
   return (
     <main className="grid min-h-dvh place-items-center">

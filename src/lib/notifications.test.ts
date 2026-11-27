@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { shelfLife } from "./freshness";
 import {
-  addDays, isDue, localDate, localMinutes, planningMessage, prepMessage, tonightMessage, type PlanContext,
+  addDays, isDue, produceMessage, localDate, localMinutes, planningMessage, prepMessage, tonightMessage, type PlanContext,
 } from "./notifications";
 
 const ctx = (over: Partial<PlanContext> = {}): PlanContext => ({
@@ -72,4 +73,20 @@ test("date + time helpers", () => {
   assert.equal(isDue(8 * 60, "07:30"), true);
   assert.equal(isDue(7 * 60, "07:30"), false);
   assert.equal(isDue(11 * 60, "07:30"), false);
+});
+
+test("fresh food: nudge the day before it typically turns", () => {
+  const bought = [
+    { name: "Lettuce", section: "produce", boughtOn: "2026-11-28" }, // 6 days → nudge on 12-03
+    { name: "Coriander", section: "produce", boughtOn: "2026-11-29" }, // 5 days → 12-03
+    { name: "Onion", section: "produce", boughtOn: "2026-11-28" }, // keeps
+    { name: "Beef mince", section: "meat_seafood", boughtOn: "2026-11-28" }, // freezer
+  ];
+  const n = produceMessage("2026-12-03", bought, shelfLife, "Tacos")!;
+  assert.equal(n.title, "Use these up soon");
+  assert.match(n.body, /lettuce and coriander/);
+  assert.match(n.body, /Tonight: Tacos\./);
+  assert.equal(produceMessage("2026-12-02", bought, shelfLife, null), null);
+  assert.equal(shelfLife("brown onion", "produce"), null);
+  assert.equal(shelfLife("salmon fillets", "meat_seafood"), 2);
 });

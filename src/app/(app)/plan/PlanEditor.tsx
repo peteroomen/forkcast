@@ -307,6 +307,11 @@ function DayRow({
                 ))}
               </div>
             )}
+            {meal && !meal.has_ingredients && !past && (
+              <Link href={`/library/${meal.id}/edit`} className="mt-1.5 block text-[12px] text-warn underline">
+                No ingredients yet: add them so this reaches the shopping list
+              </Link>
+            )}
             {meal?.prep_note && !past && (
               <p className="mt-1.5 flex items-center gap-1 text-[12px] text-warn">
                 <Timer className="size-3.5" /> {meal.prep_note}

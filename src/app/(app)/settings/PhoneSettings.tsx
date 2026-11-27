@@ -192,7 +192,7 @@ export function PhoneSettings({ prefs: initialPrefs, meatFromFreezer: initialMea
           on={prefs.produce}
           onToggle={(v) => set("produce", v)}
           title="Fresh food check"
-          sub="Lettuce, herbs and the like that might be going off. Starts with the shopping list."
+          sub="Lettuce, herbs and the like you ticked off in the shop, the morning before they usually turn"
         />
       </div>
 

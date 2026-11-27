@@ -1,12 +1,9 @@
-import { ShoppingBasket } from "lucide-react";
-import { ComingSoon } from "@/components/ComingSoon";
+import { getListPage } from "@/lib/list-data";
+import { ListScreen } from "./ListScreen";
 
-export default function ListPage() {
-  return (
-    <ComingSoon
-      icon={ShoppingBasket}
-      title="Shopping list"
-      body="Coming after the planner: the main shop plus a mid-fortnight top-up, grouped by section, with a quick “got this?” pantry check."
-    />
-  );
+export const metadata = { title: "Shopping · Forkcast" };
+
+export default async function ListPage() {
+  const data = await getListPage();
+  return <ListScreen data={data} />;
 }

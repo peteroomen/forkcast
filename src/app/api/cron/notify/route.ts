@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPush, type StoredSubscription } from "@/lib/push";
+import { shelfLife } from "@/lib/freshness";
 import {
-  addDays, isDue, localDate, localMinutes, planningMessage, prepMessage, tonightMessage,
+  addDays, isDue, localDate, localMinutes, planningMessage, prepMessage, produceMessage, tonightMessage,
   type NotificationPayload, type PlanContext,
 } from "@/lib/notifications";
 
@@ -68,14 +69,31 @@ export async function GET(request: Request) {
       members: members.data ?? [],
     };
 
+    // Fresh things ticked off in the shop over the last couple of weeks.
+    const { data: boughtRows } = await db
+      .from("shopping_items")
+      .select("name, section, checked_at")
+      .eq("household_id", hid)
+      .eq("checked", true)
+      .gte("checked_at", new Date(now.getTime() - 16 * 86400000).toISOString());
+    const bought = (boughtRows ?? [])
+      .filter((b) => b.checked_at)
+      .map((b) => ({ name: b.name, section: b.section, boughtOn: localDate(new Date(b.checked_at), hh.timezone) }));
+    const todaySlot = ctx.slots.find((s) => s.date === today && s.slot_type === "cook");
+    const tonightName = ctx.meals.find((m) => m.id === todaySlot?.meal_id)?.name ?? null;
+
     const users = [...new Set(subs.filter((s) => s.household_id === hid).map((s) => s.user_id as string))];
     for (const userId of users) {
       const p = prefs.data?.find((x) => x.user_id === userId) ?? {
-        morning_at: "07:30", evening_at: "19:30", tonight: true, prep: true, planning: true, planning_lead_days: 2,
+        morning_at: "07:30", evening_at: "19:30", tonight: true, prep: true, planning: true, produce: true, planning_lead_days: 2,
       };
       const due: NotificationPayload[] = [];
       if (p.tonight && isDue(minutes, p.morning_at)) {
         const n = tonightMessage(ctx);
+        if (n) due.push(n);
+      }
+      if ((p.produce ?? true) && isDue(minutes, p.morning_at)) {
+        const n = produceMessage(today, bought, shelfLife, tonightName);
         if (n) due.push(n);
       }
       if (isDue(minutes, p.evening_at)) {

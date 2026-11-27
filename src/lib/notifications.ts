@@ -165,3 +165,34 @@ export function planningMessage(ctx: PlanContext, leadDays: number): Notificatio
   }
   return null;
 }
+
+// ---------- fresh food ----------
+
+export interface BoughtItem { name: string; section: string; boughtOn: string }
+
+/**
+ * Morning nudge for fresh things that are about to turn: due the day before
+ * their typical shelf life runs out. Mentions tonight's dinner if there is one.
+ */
+export function produceMessage(
+  today: string,
+  bought: BoughtItem[],
+  shelfLife: (name: string, section: string) => number | null,
+  tonight: string | null,
+): NotificationPayload | null {
+  const due = bought.filter((b) => {
+    const days = shelfLife(b.name, b.section);
+    return days !== null && addDays(b.boughtOn, Math.max(1, days - 1)) === today;
+  });
+  if (!due.length) return null;
+  const names = [...new Set(due.map((d) => d.name.toLowerCase()))];
+  const listed = names.length <= 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  const days = Math.round((new Date(`${today}T00:00:00Z`).getTime() - new Date(`${due[0].boughtOn}T00:00:00Z`).getTime()) / 86400000);
+  return {
+    kind: "produce",
+    ref: today,
+    title: "Use these up soon",
+    body: `The ${listed} from ${days} days ago ${names.length === 1 ? "is" : "are"} probably near the end.${tonight ? ` Tonight: ${tonight}.` : ""}`,
+    url: "/plan",
+  };
+}
