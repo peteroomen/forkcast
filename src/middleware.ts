@@ -21,13 +21,16 @@ export async function middleware(request: NextRequest) {
     },
   );
 
+  // getSession reads the cookie and only calls Supabase Auth when the token
+  // needs refreshing; getUser would make a network round trip on every request.
+  // Data is still protected: every query is checked against the JWT by RLS.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const path = request.nextUrl.pathname;
   const isPublic = path === "/" || path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/api/cron");
-  if (!user && !isPublic) {
+  if (!session && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

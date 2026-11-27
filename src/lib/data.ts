@@ -4,27 +4,45 @@ import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
 import type { Household, Ingredient, LogEntry, Meal, MealStats, Member, Variation } from "./types";
 
-/** Signed-in user + their household + members. One query set per request. */
+export interface SessionUser {
+  id: string;
+  email: string | null;
+}
+
+/** The signed-in user from the session cookie's access token (no network call). */
+function userFromToken(token: string): SessionUser | null {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+    if (!payload.sub || (payload.exp && payload.exp * 1000 < Date.now())) return null;
+    return { id: payload.sub as string, email: (payload.email as string) ?? null };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Signed-in user + their household + members, once per request. The user comes
+ * from the session cookie rather than an Auth round trip: middleware has just
+ * refreshed it, and every query is still checked against the token by RLS.
+ */
 export const getContext = cache(async () => {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session ? userFromToken(session.access_token) : null;
   if (!user) redirect("/login");
 
   const { data: link } = await supabase
     .from("household_users")
-    .select("household_id, role, households(*)")
+    .select("role, households(*, members(*))")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  const household = (link?.households ?? null) as unknown as Household | null;
-  let members: Member[] = [];
-  if (household) {
-    const { data } = await supabase.from("members").select("*").eq("household_id", household.id).order("sort_order");
-    members = (data ?? []) as Member[];
-  }
+  const raw = (link?.households ?? null) as unknown as (Household & { members: Member[] }) | null;
+  const members = (raw?.members ?? []).sort((a, b) => a.sort_order - b.sort_order);
+  const household = raw ? (({ members: _m, ...h }) => h)(raw) as Household : null;
   return { supabase, user, household, members, role: (link?.role ?? null) as "owner" | "member" | null };
 });
 
