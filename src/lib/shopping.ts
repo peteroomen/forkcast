@@ -6,7 +6,7 @@
  *   "regular" items (milk, bread) are added to every main shop.
  * - On a fortnight plan, fresh things for week-two meals go on a mid-fortnight top-up.
  */
-import { formatQuantity, formatUnit, scaleQuantity } from "./ingredients";
+import { formatQuantity, formatUnit, nzName, scaleQuantity } from "./ingredients";
 import { SECTIONS } from "./sections";
 import { addDays } from "./notifications";
 
@@ -64,6 +64,17 @@ export function normName(name: string): string {
     .filter(Boolean)
     .map((w) => (w.length > 3 && w.endsWith("oes") ? w.slice(0, -2) : w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w))
     .join(" ");
+}
+
+/**
+ * How a name reads on the list: NZ terms and spelling fixed, sentence case
+ * ("Bone in Chicken" → "Bone in chicken"), but acronyms like LKK kept.
+ */
+export function tidyName(name: string): string {
+  const fixed = nzName(name.trim());
+  const words = fixed.split(/\s+/).map((w, i) => (i > 0 && /^[A-Z][a-z]/.test(w) ? w.toLowerCase() : w));
+  const out = words.join(" ");
+  return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
 /** Does pantry item [pantry] cover ingredient [ingredient]? ("garlic" covers "garlic cloves"). */
@@ -138,13 +149,16 @@ export function buildLists(input: {
         assumed.add(cover.name);
         continue;
       }
-      const list: ListKind = fortnight && slot.date >= topUpFrom && PERISHABLE.has(ing.section) ? "top_up" : "main";
-      const key = `${list}|${normName(cover?.tier === "usually" ? cover.name : ing.name)}`;
+      const name = tidyName(ing.name);
+      // Things you usually have are checked once, on the main shop.
+      const list: ListKind =
+        fortnight && slot.date >= topUpFrom && PERISHABLE.has(ing.section) && cover?.tier !== "usually" ? "top_up" : "main";
+      const key = `${list}|${normName(cover?.tier === "usually" ? cover.name : name)}`;
       let a = acc.get(key);
       if (!a) {
-        const display = cover?.tier === "usually" ? cover.name : ing.name;
+        const display = cover?.tier === "usually" ? cover.name : name;
         a = {
-          list, name: display.charAt(0).toUpperCase() + display.slice(1), section: cover?.section ?? ing.section,
+          list, name: tidyName(display), section: cover?.section ?? ing.section,
           meal_ids: new Set(), amounts: new Map(), unknown: false, optional: true, needs_check: cover?.tier === "usually",
         };
         acc.set(key, a);
@@ -166,7 +180,7 @@ export function buildLists(input: {
     return {
       list: a.list,
       name: a.name,
-      quantity: parts.length ? parts.join(" + ") + (a.unknown ? " + some" : "") : null,
+      quantity: parts.length ? parts.join(" + ") : null,
       section: a.section,
       source: "meal",
       meal_ids: [...a.meal_ids],

@@ -98,3 +98,19 @@ test("past nights aren't shopped for; sorted in store order", () => {
   const sections = r.items.map((i) => i.section);
   assert.equal(sections[0], "produce");
 });
+
+test("list names read naturally", async () => {
+  const { tidyName } = await import("./shopping");
+  assert.equal(tidyName("Bone in Chicken"), "Bone in chicken");
+  assert.equal(tidyName("Corriander"), "Coriander");
+  assert.equal(tidyName("tinned tomatos"), "Tinned tomatoes");
+  assert.equal(tidyName("LKK honey soy sauce packet"), "LKK honey soy sauce packet");
+  assert.equal(tidyName("2 scallions".replace("2 ", "")), "Spring onions");
+});
+
+test("usually-have items are asked once, on the main shop", () => {
+  const r = buildLists({ ...base, slots: [slot("a", "2026-11-28", "bol"), slot("b", "2026-12-06", "bol")] });
+  const garlic = r.items.filter((i) => i.name === "Garlic");
+  assert.equal(garlic.length, 1);
+  assert.equal(garlic[0].list, "main");
+});

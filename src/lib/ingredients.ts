@@ -46,6 +46,13 @@ const PLURAL: Record<string, string> = {
 
 /** US → NZ supermarket names. Applied to whole words in the ingredient name. */
 const NZ_NAMES: [RegExp, string][] = [
+  // Common misspellings
+  [/\bcorr?iander\b/g, "coriander"],
+  [/\btumeric\b/g, "turmeric"],
+  [/\btomatos\b/g, "tomatoes"],
+  [/\bpotatos\b/g, "potatoes"],
+  [/\bbrocc?oll?i\b/g, "broccoli"],
+  [/\bzuc?chini\b/g, "courgette"],
   [/\bground (beef|pork|chicken|lamb|turkey)\b/g, "$1 mince"],
   [/\bbell peppers?\b/g, "capsicum"],
   [/\b(red|green|yellow|orange) peppers?\b/g, "$1 capsicum"],
