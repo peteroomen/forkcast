@@ -15,7 +15,7 @@ declare global {
 export const CAPTURE_SCRIPT = `
 window.__bip = null;
 window.addEventListener('beforeinstallprompt', function (e) {
-  e.preventDefault();
+  // No preventDefault: let Chrome show its own install UI too.
   window.__bip = e;
   window.dispatchEvent(new Event('bip-change'));
 });
